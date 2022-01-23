@@ -8,5 +8,11 @@
       "matches": ["https://edstem.org/*"],
       "js": ["content.js"]
     }
+  ],
+  "action": {
+    "default_popup": "options.html"
+  },
+  "permissions": [
+    "storage"
   ]
 }
