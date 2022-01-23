@@ -1,6 +1,12 @@
 const expandButtonSelector = "span.sbi-content";
 const courseTabSelector = "span.sbi-content";
 
+async function loadInactiveCourses() {
+  return new Promise(resolve => {
+    chrome.storage.sync.get(["inactiveCourses"], (result) => resolve(result.inactiveCourses ? result.inactiveCourses : []));
+  })
+}
+
 const buttonObserver = new MutationObserver(function (mutations, observer) {
   for (const _ of mutations) {
     for (let tab of document.querySelectorAll(expandButtonSelector)) {
@@ -13,15 +19,26 @@ const buttonObserver = new MutationObserver(function (mutations, observer) {
   }
 });
 
-const coursesObserver = new MutationObserver(function (mutations) {
+const coursesObserver = new MutationObserver(async function (mutations) {
+  const inactiveCourses = {};
+  for (const course of await loadInactiveCourses()) {
+    inactiveCourses[course] = true;
+  }
+
   for (const _ of mutations) {
     // Replace course codes with names in the sidebar
     if (document.querySelector(courseTabSelector)) {
       Object.values(document.querySelectorAll(courseTabSelector)).map(
         (course) => {
+          const original = course.innerText;
           const [courseCode, courseName] = course.innerText.split(": ");
           if (courseName) {
-            course.innerHTML = `${courseName} <small style="opacity: 0.5">(${courseCode.replace("COMP ", "")})</small>`;
+            const content = `${courseName} <small style="opacity: 0.5">(${courseCode.replace("COMP ", "")})</small>`;
+            if (inactiveCourses[original]) {
+              course.innerHTML = `<strike style="opacity: 0.5">${content}</strike>`;
+            } else {
+              course.innerHTML = content;
+            }
           }
         }
       );
